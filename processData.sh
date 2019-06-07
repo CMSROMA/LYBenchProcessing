@@ -19,7 +19,7 @@ do
   case "$1" in
   
     -b|--batch)
-      echo "Running in batch"
+#      echo "Running in batch"
       batch=1
       shift;;
  
@@ -79,6 +79,11 @@ tail -n 10 \${tmpDir}/log/${runId}.log
 scp -P2222 -r \${tmpDir}/dataTree/${runId}  cmsdaq@pccmsdaq01.roma1.infn.it:/data/cmsdaq/${runType}/dataTree/ > /dev/null 2>&1
 
 # stageout to dCache
+mkdir -p ${dCacheFolder}/${runType}
+mkdir -p ${dCacheFolder}/${runType}/dataTree/
+mkdir -p ${dCacheFolder}/${runType}/dataTree/${runId}
+
+for file in \`find \${tmpDir}/dataTree/${runId}/ -type f\`; do dccp \$file ${dCacheFolder}/${runType}/dataTree/${runId}/; done
 
 # Run H4Analysis
 echo " ---> Running analysis for ${runType} run ${runId} <---"
@@ -97,6 +102,18 @@ tail -n 10 \${tmpDir}/log/h4Analysis_${runId}.log
 #stageout output
 scp -P2222 \${tmpDir}/ntuples/h4Reco_${runId}.root  cmsdaq@pccmsdaq01.roma1.infn.it:/data/cmsdaq/${runType}/ntuples/ > /dev/null 2>&1
 
+#stageout dCache
+mkdir -p ${dCacheFolder}/${runType}
+mkdir -p ${dCacheFolder}/${runType}/ntuples/
+dccp \${tmpDir}/ntuples/h4Reco_${runId}.root ${dCacheFolder}/${runType}/ntuples/
+
 EOF
 
-bsub -q cmsshort -o jobs/${runType}_${runId}/job_${runType}_${runId}.out -e jobs/${runType}_${runId}/job_${runType}_${runId}.err -J ${runType}_${runId} < jobs/${runType}_${runId}/job_${runType}_${runId}.sh
+chmod +x jobs/${runType}_${runId}/job_${runType}_${runId}.sh
+
+if [ ${batch} -eq 1 ]; then
+    bsub -q cmsshort -o jobs/${runType}_${runId}/job_${runType}_${runId}.out -e jobs/${runType}_${runId}/job_${runType}_${runId}.err -J ${runType}_${runId} < jobs/${runType}_${runId}/job_${runType}_${runId}.sh
+else
+    echo "Running interactively job_${runType}_${runId}.sh"
+    jobs/${runType}_${runId}/job_${runType}_${runId}.sh > jobs/${runType}_${runId}/job_${runType}_${runId}.out 2>&1
+fi
