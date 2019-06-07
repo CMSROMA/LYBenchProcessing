@@ -71,9 +71,7 @@ scp -P2222 -r cmsdaq@pccmsdaq01.roma1.infn.it:/data/cmsdaq/${runType}/raw/${runI
  
 cd ${drs4daqFolder}
 
-drs4analysis/drs4convert \${tmpDir}/raw/${runId} \${tmpDir}/dataTree/${runId} > \${tmpDir}/log/${runId}.log 2>&1
-echo "Last 10 lines from \${tmpDir}/log/${runId}.log"
-tail -n 10 \${tmpDir}/log/${runId}.log
+drs4analysis/drs4convert \${tmpDir}/raw/${runId} \${tmpDir}/dataTree/${runId} 
 
 # stageout  back via ssh to pccmsdaq01 
 scp -P2222 -r \${tmpDir}/dataTree/${runId}  cmsdaq@pccmsdaq01.roma1.infn.it:/data/cmsdaq/${runType}/dataTree/ > /dev/null 2>&1
@@ -82,22 +80,19 @@ scp -P2222 -r \${tmpDir}/dataTree/${runId}  cmsdaq@pccmsdaq01.roma1.infn.it:/dat
 mkdir -p ${dCacheFolder}/${runType}
 mkdir -p ${dCacheFolder}/${runType}/dataTree/
 mkdir -p ${dCacheFolder}/${runType}/dataTree/${runId}
-
 for file in \`find \${tmpDir}/dataTree/${runId}/ -type f\`; do dccp \$file ${dCacheFolder}/${runType}/dataTree/${runId}/; done
 
 # Run H4Analysis
 echo " ---> Running analysis for ${runType} run ${runId} <---"
 
 cd \${tmpDir}
+mkdir -p ntuples
+
 #Prepare cfg
 cat ${h4AnalysisConfigFolder}/DRS4_${runType}_TEMPLATE.conf | sed -e "s%DATA_FOLDER/RUN_TYPE%\${tmpDir}%g" | sed -e "s%RUN_TYPE%${runType}%g"  | sed -e "s%RUN_ID%${runId}%g" > h4Analysis_${runType}_${runId}.conf
-#
-mkdir -p ntuples
-#
+
 cd ${h4AnalysisFolder}
-bin/H4Reco \${tmpDir}/h4Analysis_${runType}_${runId}.conf > \${tmpDir}/log/h4Analysis_${runId}.log 2>&1
-echo "Last 10 lines from \${tmpDir}/log/h4Analysis_${runId}.log:"
-tail -n 10 \${tmpDir}/log/h4Analysis_${runId}.log 
+bin/H4Reco \${tmpDir}/h4Analysis_${runType}_${runId}.conf
 
 #stageout output
 scp -P2222 \${tmpDir}/ntuples/h4Reco_${runId}.root  cmsdaq@pccmsdaq01.roma1.infn.it:/data/cmsdaq/${runType}/ntuples/ > /dev/null 2>&1
