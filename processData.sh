@@ -67,20 +67,20 @@ mkdir -p log/
 mkdir -p dataTree/
 mkdir -p raw
 
-scp -P2222 -r cmsdaq@pccmsdaq01.roma1.infn.it:/data/cmsdaq/${runType}/raw/${runId} raw/ > /dev/null 2>&1
+scp -r cmsdaq@10.0.0.44:/data/cmsdaq/${runType}/raw/${runId} raw/ 2>&1
  
 cd ${drs4daqFolder}
 
 drs4analysis/drs4convert \${tmpDir}/raw/${runId} \${tmpDir}/dataTree/${runId} 
 
 # stageout  back via ssh to pccmsdaq01 
-scp -P2222 -r \${tmpDir}/dataTree/${runId}  cmsdaq@pccmsdaq01.roma1.infn.it:/data/cmsdaq/${runType}/dataTree/ > /dev/null 2>&1
+#scp -r \${tmpDir}/dataTree/${runId}  cmsdaq@10.0.0.44:/data/cmsdaq/${runType}/dataTree/ 2>&1
 
 # stageout to dCache
 mkdir -p ${dCacheFolder}/${runType}
 mkdir -p ${dCacheFolder}/${runType}/dataTree/
 mkdir -p ${dCacheFolder}/${runType}/dataTree/${runId}
-for file in \`find \${tmpDir}/dataTree/${runId}/ -type f\`; do dccp \$file ${dCacheFolder}/${runType}/dataTree/${runId}/; done
+for file in \`find \${tmpDir}/dataTree/${runId}/ -type f\`; do cp -v \$file ${dCacheFolder}/${runType}/dataTree/${runId}/; done
 
 # Run H4Analysis
 echo " ---> Running analysis for ${runType} run ${runId} <---"
@@ -95,13 +95,14 @@ cd ${h4AnalysisFolder}
 bin/H4Reco \${tmpDir}/h4Analysis_${runType}_${runId}.conf
 
 #stageout output
-scp -P2222 \${tmpDir}/ntuples/h4Reco_${runId}.root  cmsdaq@pccmsdaq01.roma1.infn.it:/data/cmsdaq/${runType}/ntuples/ > /dev/null 2>&1
+scp \${tmpDir}/ntuples/h4Reco_${runId}.root  cmsdaq@10.0.0.44:/data/cmsdaq/${runType}/ntuples/ 2>&1
 
 #stageout dCache
 mkdir -p ${dCacheFolder}/${runType}
 mkdir -p ${dCacheFolder}/${runType}/ntuples/
-dccp \${tmpDir}/ntuples/h4Reco_${runId}.root ${dCacheFolder}/${runType}/ntuples/
+cp -v \${tmpDir}/ntuples/h4Reco_${runId}.root ${dCacheFolder}/${runType}/ntuples/
 
+rm -rf \${tmpDir}
 EOF
 
 chmod +x jobs/${runType}_${runId}/job_${runType}_${runId}.sh
